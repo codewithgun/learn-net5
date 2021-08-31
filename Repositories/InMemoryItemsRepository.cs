@@ -4,7 +4,9 @@ using System.Collections.Generic;
 using Catalog.Entities;
 
 namespace Catalog.Repositories {
-    public class InMemoryItemsRepository {
+    // Because dependency introduces dependencies. Eg ItemsController depends on InMemoryItemRepository.
+    // Therefore, interface used for dependency inversion
+    public class InMemoryItemsRepository: IItemsRepository {
         private readonly List<Item> items = new(){
             new Item { Id = Guid.NewGuid(), Name = "Potion", Price = 9, CreatedDate = DateTimeOffset.UtcNow },
             new Item { Id = Guid.NewGuid(), Name = "Iron Sword", Price = 25, CreatedDate = DateTimeOffset.UtcNow },
