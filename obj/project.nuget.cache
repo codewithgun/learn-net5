@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "sZe10yeCnuvzZlyLS+BiH8IG1sSqH+5TNUta4Fi0yB9J3cLSwllcpnVJCx9YgJV+w86wf4SIEWrVX5LOTJZJHw==",
+  "dgSpecHash": "CQLQ01sWG4duSor67A1+h4LQcBqWnsvR+3Pl95WfU4iW1xcQicmkTbnVDaMNA10fJdbZuSq/Ba85fLBGNzsO5g==",
   "success": true,
   "projectFilePath": "/home/guantian/Projects/learn-net5-webapi/learn-net5-webapi.csproj",
   "expectedPackageFiles": [
@@ -14,8 +14,9 @@
     "/home/guantian/.nuget/packages/mongodb.libmongocrypt/1.2.2/mongodb.libmongocrypt.1.2.2.nupkg.sha512",
     "/home/guantian/.nuget/packages/sharpcompress/0.23.0/sharpcompress.0.23.0.nupkg.sha512",
     "/home/guantian/.nuget/packages/swashbuckle.aspnetcore/5.6.3/swashbuckle.aspnetcore.5.6.3.nupkg.sha512",
-    "/home/guantian/.nuget/packages/swashbuckle.aspnetcore.swagger/5.6.3/swashbuckle.aspnetcore.swagger.5.6.3.nupkg.sha512",
-    "/home/guantian/.nuget/packages/swashbuckle.aspnetcore.swaggergen/5.6.3/swashbuckle.aspnetcore.swaggergen.5.6.3.nupkg.sha512",
+    "/home/guantian/.nuget/packages/swashbuckle.aspnetcore.annotations/6.2.1/swashbuckle.aspnetcore.annotations.6.2.1.nupkg.sha512",
+    "/home/guantian/.nuget/packages/swashbuckle.aspnetcore.swagger/6.2.1/swashbuckle.aspnetcore.swagger.6.2.1.nupkg.sha512",
+    "/home/guantian/.nuget/packages/swashbuckle.aspnetcore.swaggergen/6.2.1/swashbuckle.aspnetcore.swaggergen.6.2.1.nupkg.sha512",
     "/home/guantian/.nuget/packages/swashbuckle.aspnetcore.swaggerui/5.6.3/swashbuckle.aspnetcore.swaggerui.5.6.3.nupkg.sha512",
     "/home/guantian/.nuget/packages/system.buffers/4.5.1/system.buffers.4.5.1.nupkg.sha512",
     "/home/guantian/.nuget/packages/system.runtime.compilerservices.unsafe/5.0.0/system.runtime.compilerservices.unsafe.5.0.0.nupkg.sha512",

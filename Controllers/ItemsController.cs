@@ -9,6 +9,8 @@ using Catalog.Repositories;
 using Catalog.Entities;
 using Catalog.Dtos;
 using System.Threading.Tasks;
+using Swashbuckle.AspNetCore.Annotations;
+using System.Collections;
 
 namespace Catalog.Controllers
 {
@@ -33,6 +35,12 @@ namespace Catalog.Controllers
         // Instead of returning Item, which is a database entity,
         // We return DTO because it serve as a contract with the client.
         // And, breaking the DTO is a no-go
+        [SwaggerOperation(
+            Summary = "Get all items",
+            Description = "Get all items",
+            OperationId = "GetItems"
+        )]
+        [SwaggerResponse(StatusCodes.Status200OK, "Return list of items")]
         public async Task<IEnumerable<ItemDto>> GetItemsAsync()
         {
             // Conversion of Item to ItemDto
@@ -45,8 +53,14 @@ namespace Catalog.Controllers
         // ActionResult allow us to return more than one type
         // ActionResult = HTTP result, such as OkResponse, NotFoundResponse
         // which are, results of action method (controller)
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ItemDto))]
-        public async Task<IActionResult> GetItem(Guid id)
+        [SwaggerOperation(
+            Summary = "Get an item",
+            Description = "Get an item using item id",
+            OperationId = "GetItemById"
+        )]
+        [SwaggerResponse(StatusCodes.Status200OK, "Return an single item", typeof(ItemDto))]
+        [SwaggerResponse(StatusCodes.Status404NotFound, "Item not found", typeof(NotFoundDto))]
+        public async Task<IActionResult> GetItemAsync(Guid id)
         {
             Item item = await this.repository.GetItemAsync(id);
             if (item is null)
@@ -58,7 +72,13 @@ namespace Catalog.Controllers
 
         // POST /items
         [HttpPost]
-        public async Task<ActionResult<ItemDto>> CreateItem(CreateItemDto itemDto)
+        [SwaggerOperation(
+            Summary = "Create a new item",
+            Description = "Create a new item",
+            OperationId = "CreateNewItem"
+        )]
+        [SwaggerResponse(StatusCodes.Status201Created, "Item has been created", typeof(ItemDto))]
+        public async Task<ActionResult<ItemDto>> CreateItemAsync(CreateItemDto itemDto)
         {
             Item item = new()
             {
@@ -68,17 +88,19 @@ namespace Catalog.Controllers
                 CreatedDate = DateTimeOffset.UtcNow
             };
             await this.repository.CreateItemAsync(item);
-            return CreatedAtAction(nameof(GetItem), new { id = item.Id }, item);
+            return CreatedAtAction(nameof(GetItemAsync), new { id = item.Id }, item); // .Net runtime automatically remove Async suffix, check Startup.cs to stop suffix auto removal
         }
 
         // PUT /items
-        /// <summary>
-        /// Testing
-        /// </summar>
         [HttpPut("{id}")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult> UpdateItem(Guid id, UpdateItemDto itemDto)
+        [SwaggerOperation(
+            Summary = "Update item",
+            Description = "Update Item",
+            OperationId = "UpdateItemById"
+        )]
+        [SwaggerResponse(StatusCodes.Status404NotFound, "Item to update not found", typeof(NotFoundDto))]
+        [SwaggerResponse(StatusCodes.Status204NoContent)]
+        public async Task<ActionResult> UpdateItemAsync(Guid id, UpdateItemDto itemDto)
         {
             Item existingItem = await this.repository.GetItemAsync(id);
             if (existingItem is null)
@@ -100,8 +122,13 @@ namespace Catalog.Controllers
 
         // DELETE /items
         [HttpDelete("{id}")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [SwaggerOperation(
+            Summary = "Delete an item",
+            Description = "Delete an item",
+            OperationId = "DeleteItemById"
+        )]
+        [SwaggerResponse(StatusCodes.Status404NotFound, "Item not found", typeof(NotFoundDto))]
+        [SwaggerResponse(StatusCodes.Status204NoContent)]
         public async Task<ActionResult> DeleteItem(Guid id)
         {
             Item existingItem = await this.repository.GetItemAsync(id);

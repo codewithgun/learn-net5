@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>learn-net5-webapi</name>
+    </assembly>
+    <members>
+        <member name="P:Catalog.Dtos.NotFoundDto.type">
+            <example>https://tools.ietf.org/html/rfc7231#section-6.5.4</example>
+        </member>
+        <member name="P:Catalog.Dtos.NotFoundDto.title">
+            <example>Not Found</example>
+        </member>
+        <member name="P:Catalog.Dtos.NotFoundDto.status">
+            <example>404</example>
+        </member>
+        <member name="P:Catalog.Dtos.NotFoundDto.traceId">
+            <example>00-5c77a23f7d13e047b674a25ed06da971-2b17ead2d3540644-00</example>
+        </member>
+    </members>
+</doc>
