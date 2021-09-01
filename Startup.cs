@@ -11,6 +11,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using Catalog.Repositories;
+using Catalog.Settings;
+using MongoDB.Driver;
+using MongoDB.Bson.Serialization.Serializers;
+using MongoDB.Bson.Serialization;
+using System.IO;
 
 namespace learn_net5_webapi
 {
@@ -24,9 +30,18 @@ namespace learn_net5_webapi
         public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
+        // The container here refers to ServiceContainer, which will responsible for dependency injection
         public void ConfigureServices(IServiceCollection services)
         {
-
+            BsonSerializer.RegisterSerializer(new GuidSerializer(MongoDB.Bson.BsonType.String));
+            BsonSerializer.RegisterSerializer(new DateTimeOffsetSerializer(MongoDB.Bson.BsonType.String));
+            services.AddSingleton<IMongoClient>(serviceProvider =>
+            {
+                // "MongoDbSetting" in appsettings.json
+                var settings = Configuration.GetSection(nameof(MongoDbSettings)).Get<MongoDbSettings>();
+                return new MongoClient(settings.ConnectionString);
+            });
+            services.AddSingleton<IItemsRepository, MongoItemRepository>();
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
@@ -40,7 +55,7 @@ namespace learn_net5_webapi
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-                app.UseSwagger();
+                app.UseSwagger(); // Middleware
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "learn_net5_webapi v1"));
             }
 
