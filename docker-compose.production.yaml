@@ -1,0 +1,26 @@
+version: "3.1"
+services:
+  mongo:
+    image: mongo
+    restart: unless-stopped
+    ports:
+      - 27017:27017
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=root
+    networks:
+      - learn_dotnet5
+    container_name: mongodb
+  backend:
+    image: codewithgun/catalog:v0.0.1
+    ports:
+      - 8080:80
+    environment:
+      - MongoDbSettings:Host=mongodb
+      - MongoDbSettings:Password=root
+    networks:
+      - learn_dotnet5
+    container_name: catalog-backend
+
+networks:
+  learn_dotnet5:

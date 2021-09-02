@@ -42,3 +42,6 @@
 /home/guantian/Projects/learn-net5-webapi/bin/Debug/net5.0/Swashbuckle.AspNetCore.Annotations.dll
 /home/guantian/Projects/learn-net5-webapi/bin/Debug/net5.0/learn-net5-webapi.xml
 /home/guantian/Projects/learn-net5-webapi/obj/Debug/net5.0/learn-net5-webapi.xml
+/home/guantian/Projects/learn-net5-webapi/bin/Debug/net5.0/HealthChecks.MongoDb.dll
+/home/guantian/Projects/learn-net5-webapi/bin/Debug/net5.0/Microsoft.Extensions.Diagnostics.HealthChecks.dll
+/home/guantian/Projects/learn-net5-webapi/bin/Debug/net5.0/Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions.dll

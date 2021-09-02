@@ -17,6 +17,10 @@ using MongoDB.Driver;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Bson.Serialization;
 using System.IO;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using System.Text.Json;
+using System.Net.Mime;
+using Microsoft.AspNetCore.Http;
 
 namespace learn_net5_webapi
 {
@@ -35,12 +39,20 @@ namespace learn_net5_webapi
         {
             BsonSerializer.RegisterSerializer(new GuidSerializer(MongoDB.Bson.BsonType.String));
             BsonSerializer.RegisterSerializer(new DateTimeOffsetSerializer(MongoDB.Bson.BsonType.String));
+            var mongoDbSettings = Configuration.GetSection(nameof(MongoDbSettings)).Get<MongoDbSettings>();
             services.AddSingleton<IMongoClient>(serviceProvider =>
             {
                 // "MongoDbSetting" in appsettings.json
-                var settings = Configuration.GetSection(nameof(MongoDbSettings)).Get<MongoDbSettings>();
-                return new MongoClient(settings.ConnectionString);
+                // Mongo database password was injected from dotnet user-secrets instead of appsettings.json
+                // .Net will automatically overwrite the settings in appsettings.json, if it exists in environments, or user-secret
+                return new MongoClient(mongoDbSettings.ConnectionString);
             });
+            // Add Cors policies, basically it's rules  
+            services.AddCors(sc => sc.AddPolicy("AllowAll", builder =>
+            {
+                builder.AllowAnyHeader()
+                .AllowAnyMethod().AllowAnyOrigin();
+            }));
             services.AddSingleton<IItemsRepository, MongoItemRepository>();
             services.AddControllers(options =>
             {
@@ -53,6 +65,9 @@ namespace learn_net5_webapi
                 c.IncludeXmlComments(filePath); // Enable swagger comment annotation
                 c.EnableAnnotations(); // Swashbuckle.AspNetCore.Annotations, which enable [SwaggerOperation()] [SwaggerResponse()] and others annotation
             });
+
+            // Add health check service (helpful for kurbenetes)
+            services.AddHealthChecks().AddMongoDb(mongoDbSettings.ConnectionString, name: "mongodb", timeout: TimeSpan.FromSeconds(5), tags: new[] { "dbready" });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -64,16 +79,43 @@ namespace learn_net5_webapi
                 app.UseSwagger(); // Middleware
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "learn_net5_webapi v1"));
             }
-
-            app.UseHttpsRedirection();
-
+            app.UseCors("AllowAll"); // AllowAll = Policy added at ConfigureServices
+            // app.UseHttpsRedirection(); // Causes issue in docker port mapping
             app.UseRouting();
-
             app.UseAuthorization();
-
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                // Check mongodb is healthy or not, mongodb health check was tag with "ready" at ConfigureServices
+                endpoints.MapHealthChecks("/health/dbready", new HealthCheckOptions
+                {
+                    // Predicate = Filter only the health check type we want for this endpoint
+                    Predicate = (check) => check.Tags.Contains("dbready"),
+                    // Custom response for health check API
+                    ResponseWriter = async (context, report) =>
+                    {
+                        var result = JsonSerializer.Serialize(
+                            new
+                            {
+                                status = report.Status.ToString(),
+                                checks = report.Entries.Select(entry => new
+                                {
+                                    name = entry.Key,
+                                    status = entry.Value.Status.ToString(),
+                                    exception = entry.Value.Exception != null ? entry.Value.Exception.Message : null,
+                                    duration = entry.Value.Duration.ToString()
+                                })
+                            }
+                        );
+                        context.Response.ContentType = MediaTypeNames.Application.Json;
+                        await context.Response.WriteAsync(result);
+                    }
+                });
+                // Check only our REST api service, without others
+                endpoints.MapHealthChecks("/health/live", new HealthCheckOptions
+                {
+                    Predicate = (_) => false
+                });
             });
         }
     }
