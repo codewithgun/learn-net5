@@ -27,7 +27,7 @@ using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using Catalog.Context;
 using Microsoft.EntityFrameworkCore;
-using Catalog.Entities.Postgres;
+using Catalog.Entities;
 
 namespace learn_net5_webapi
 {
@@ -47,16 +47,16 @@ namespace learn_net5_webapi
             //
             var jwtSetting = Configuration.GetSection(nameof(JwtSetting)).Get<JwtSetting>();
 
-            // BsonSerializer.RegisterSerializer(new GuidSerializer(MongoDB.Bson.BsonType.String));
-            // BsonSerializer.RegisterSerializer(new DateTimeOffsetSerializer(MongoDB.Bson.BsonType.String));
-            // var mongoDbSettings = Configuration.GetSection(nameof(MongoDbSettings)).Get<MongoDbSettings>();
-            // services.AddSingleton<IMongoClient>(serviceProvider =>
-            // {
-            //     // "MongoDbSetting" in appsettings.json
-            //     // Mongo database password was injected from dotnet user-secrets instead of appsettings.json
-            //     // .Net will automatically overwrite the settings in appsettings.json, if it exists in environments, or user-secret
-            //     return new MongoClient(mongoDbSettings.ConnectionString);
-            // });
+            BsonSerializer.RegisterSerializer(new GuidSerializer(MongoDB.Bson.BsonType.String));
+            BsonSerializer.RegisterSerializer(new DateTimeOffsetSerializer(MongoDB.Bson.BsonType.String));
+            var mongoDbSettings = Configuration.GetSection(nameof(MongoDbSettings)).Get<MongoDbSettings>();
+            services.AddSingleton<IMongoClient>(serviceProvider =>
+            {
+                // "MongoDbSetting" in appsettings.json
+                // Mongo database password was injected from dotnet user-secrets instead of appsettings.json
+                // .Net will automatically overwrite the settings in appsettings.json, if it exists in environments, or user-secret
+                return new MongoClient(mongoDbSettings.ConnectionString);
+            });
 
             // Build connection string for Postgresql
             var postgresDbSettings = Configuration.GetSection(nameof(PostgresDbSettings)).Get<PostgresDbSettings>();
@@ -100,8 +100,9 @@ namespace learn_net5_webapi
                 builder.AllowAnyHeader()
                 .AllowAnyMethod().AllowAnyOrigin();
             }));
-            // services.AddSingleton<IItemsRepository<Item>, MongoItemRepository>();
-            services.AddScoped<IItemsRepository<Item>, PgItemRepository>();
+            // services.AddSingleton<IItemsRepository, MongoItemRepository>();
+            services.AddScoped<IItemsRepository, PgItemRepository>();
+            services.AddScoped<ICategoryRepository, PgCategoryRepository>();
             services.AddControllers(options =>
             {
                 options.SuppressAsyncSuffixInActionNames = false; // Disable auto-remove controller method async suffix

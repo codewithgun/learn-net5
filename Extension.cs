@@ -1,5 +1,5 @@
 using Catalog.Dtos;
-using Catalog.Entities.Postgres;
+using Catalog.Entities;
 
 namespace Catalog
 {
@@ -13,6 +13,16 @@ namespace Catalog
                 Name = item.Name,
                 Price = item.Price,
                 CreatedDate = item.CreatedDate
+            };
+        }
+
+        public static CategoryDto AsDto(this Category category)
+        {
+            return new CategoryDto
+            {
+                Id = category.Id,
+                Name = category.Name,
+                CreatedDate = category.CreatedDate
             };
         }
     }

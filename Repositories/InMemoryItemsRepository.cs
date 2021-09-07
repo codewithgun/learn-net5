@@ -1,14 +1,14 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using Catalog.Entities.Mongo;
+using Catalog.Entities;
 using System.Threading.Tasks;
 
 namespace Catalog.Repositories
 {
     // Because dependency introduces dependencies. Eg ItemsController depends on InMemoryItemRepository.
     // Therefore, interface used for dependency inversion
-    public class InMemoryItemsRepository : IItemsRepository<Item>
+    public class InMemoryItemsRepository : IItemsRepository
     {
         private readonly List<Item> items = new()
         {

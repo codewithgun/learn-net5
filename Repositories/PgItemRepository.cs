@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Catalog.Context;
-using Catalog.Entities.Postgres;
+using Catalog.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Catalog.Repositories
 {
-    public class PgItemRepository : IItemsRepository<Item>
+    public class PgItemRepository : IItemsRepository
     {
         private readonly PostgresDbContext _context;
         public PgItemRepository(PostgresDbContext context)
@@ -40,7 +40,7 @@ namespace Catalog.Repositories
 
         public async Task<IEnumerable<Item>> GetItemsAsync()
         {
-            return await this._context.Items.AsNoTracking().ToListAsync();
+            return await this._context.Items.ToListAsync();
         }
 
         public async Task UpdateItemAsync(Item item)
