@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Http;
 using System.Collections.Generic;
 
 using Catalog.Repositories;
-using Catalog.Entities;
+using Catalog.Entities.Postgres;
 using Catalog.Dtos;
 using System.Threading.Tasks;
 using Swashbuckle.AspNetCore.Annotations;
@@ -21,11 +21,11 @@ namespace Catalog.Controllers
     {
         // It can be in-memory repository, mongodb, postgresql
         // Thanks to dependency inversion
-        private readonly IItemsRepository repository;
+        private readonly IItemsRepository<Item> repository;
 
         // constructor
         // Controller is instantiate everytime when there is a request
-        public ItemsController(IItemsRepository repository)
+        public ItemsController(IItemsRepository<Item> repository)
         {
             this.repository = repository;
         }

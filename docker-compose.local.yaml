@@ -9,5 +9,25 @@ services:
       - MONGO_INITDB_ROOT_USERNAME=root
       - MONGO_INITDB_ROOT_PASSWORD=root
     networks:
-      - learn_dotnet5_network
+      - learn_dotnet5
     container_name: mongodb
+    volumes:
+      - db-data:/data/db
+  postgres:
+    image: postgres
+    container_name: postgresql
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+    networks:
+      - learn_dotnet5
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+networks:
+  learn_dotnet5:
+
+volumes:
+  db-data:

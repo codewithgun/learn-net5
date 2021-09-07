@@ -6,13 +6,13 @@ using Catalog.Entities;
 
 namespace Catalog.Repositories
 {
-    public interface IItemsRepository
+    public interface IItemsRepository<T> where T : Item
     {
-        Task<IEnumerable<Item>> GetItemsAsync();
-        Task<Item> GetItemAsync(Guid id);
-        Task CreateItemAsync(Item item);
-        Task UpdateItemAsync(Item item);
+        Task<IEnumerable<T>> GetItemsAsync();
+        Task<T> GetItemAsync(Guid id);
+        Task CreateItemAsync(T item);
+        Task UpdateItemAsync(T item);
 
-        Task DeleteItemAsync(Item item);
+        Task DeleteItemAsync(T item);
     }
 }

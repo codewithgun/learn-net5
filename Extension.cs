@@ -1,10 +1,14 @@
 using Catalog.Dtos;
-using Catalog.Entities;
+using Catalog.Entities.Postgres;
 
-namespace Catalog {
-    public static class Extension {
-        public static ItemDto AsDto(this Item item) {
-            return new ItemDto {
+namespace Catalog
+{
+    public static class Extension
+    {
+        public static ItemDto AsDto(this Item item)
+        {
+            return new ItemDto
+            {
                 Id = item.Id,
                 Name = item.Name,
                 Price = item.Price,

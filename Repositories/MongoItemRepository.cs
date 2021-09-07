@@ -1,14 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Catalog.Entities;
+using Catalog.Entities.Mongo;
 using Microsoft.AspNetCore.Components.Web.Virtualization;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace Catalog.Repositories
 {
-    public class MongoItemRepository : IItemsRepository
+    public class MongoItemRepository : IItemsRepository<Item>
     {
         private const string databaseName = "catalog";
         private const string collectionName = "items";

@@ -21,6 +21,13 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using System.Text.Json;
 using System.Net.Mime;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.Text;
+using Microsoft.IdentityModel.Tokens;
+using Npgsql;
+using Catalog.Context;
+using Microsoft.EntityFrameworkCore;
+using Catalog.Entities.Postgres;
 
 namespace learn_net5_webapi
 {
@@ -37,37 +44,89 @@ namespace learn_net5_webapi
         // The container here refers to ServiceContainer, which will responsible for dependency injection
         public void ConfigureServices(IServiceCollection services)
         {
-            BsonSerializer.RegisterSerializer(new GuidSerializer(MongoDB.Bson.BsonType.String));
-            BsonSerializer.RegisterSerializer(new DateTimeOffsetSerializer(MongoDB.Bson.BsonType.String));
-            var mongoDbSettings = Configuration.GetSection(nameof(MongoDbSettings)).Get<MongoDbSettings>();
-            services.AddSingleton<IMongoClient>(serviceProvider =>
+            //
+            var jwtSetting = Configuration.GetSection(nameof(JwtSetting)).Get<JwtSetting>();
+
+            // BsonSerializer.RegisterSerializer(new GuidSerializer(MongoDB.Bson.BsonType.String));
+            // BsonSerializer.RegisterSerializer(new DateTimeOffsetSerializer(MongoDB.Bson.BsonType.String));
+            // var mongoDbSettings = Configuration.GetSection(nameof(MongoDbSettings)).Get<MongoDbSettings>();
+            // services.AddSingleton<IMongoClient>(serviceProvider =>
+            // {
+            //     // "MongoDbSetting" in appsettings.json
+            //     // Mongo database password was injected from dotnet user-secrets instead of appsettings.json
+            //     // .Net will automatically overwrite the settings in appsettings.json, if it exists in environments, or user-secret
+            //     return new MongoClient(mongoDbSettings.ConnectionString);
+            // });
+
+            // Build connection string for Postgresql
+            var postgresDbSettings = Configuration.GetSection(nameof(PostgresDbSettings)).Get<PostgresDbSettings>();
+            services.AddDbContext<PostgresDbContext>(options =>
             {
-                // "MongoDbSetting" in appsettings.json
-                // Mongo database password was injected from dotnet user-secrets instead of appsettings.json
-                // .Net will automatically overwrite the settings in appsettings.json, if it exists in environments, or user-secret
-                return new MongoClient(mongoDbSettings.ConnectionString);
+                options.UseNpgsql(postgresDbSettings.ConnectionString);
             });
+
+            // Tell .net core to use JwtBearer for authentication 
+            // https://stackoverflow.com/questions/46223407/asp-net-core-2-authenticationschemes
+            // DefaultScheme: if specified, all the other defaults will fallback to this value
+            // DefaultAuthenticateScheme: if specified, AuthenticateAsync() will use this scheme, and also the AuthenticationMiddleware added by UseAuthentication() will use this scheme to set context.User automatically. (Corresponds to AutomaticAuthentication)
+            // DefaultChallengeScheme if specified, ChallengeAsync() will use this scheme, [Authorize] with policies that don't specify schemes will also use this
+            // DefaultSignInScheme is used by SignInAsync() and also by all of the remote auth schemes like Google/Facebook/OIDC/OAuth, typically this would be set to a cookie.
+            // DefaultSignOutScheme is used by SignOutAsync() falls back to DefaultSignInScheme
+            // DefaultForbidScheme is used by ForbidAsync(), falls back to DefaultChallengeScheme
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(jwt =>
+            {
+                var secretKey = Encoding.ASCII.GetBytes(jwtSetting.Secret);
+                jwt.SaveToken = true;
+                jwt.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(secretKey),
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateLifetime = true,
+                    RequireExpirationTime = false,
+                };
+            });
+
+
             // Add Cors policies, basically it's rules  
             services.AddCors(sc => sc.AddPolicy("AllowAll", builder =>
             {
                 builder.AllowAnyHeader()
                 .AllowAnyMethod().AllowAnyOrigin();
             }));
-            services.AddSingleton<IItemsRepository, MongoItemRepository>();
+            // services.AddSingleton<IItemsRepository<Item>, MongoItemRepository>();
+            services.AddScoped<IItemsRepository<Item>, PgItemRepository>();
             services.AddControllers(options =>
             {
                 options.SuppressAsyncSuffixInActionNames = false; // Disable auto-remove controller method async suffix
             });
-            services.AddSwaggerGen(c =>
+            services.AddSwaggerGen(swagger =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "learn_net5_webapi", Version = "v1" });
+                swagger.SwaggerDoc("v1", new OpenApiInfo { Title = "learn_net5_webapi", Version = "v1" });
                 var filePath = Path.Combine(System.AppContext.BaseDirectory, "learn-net5-webapi.xml"); // Refer to {project_name}.xml in bin
-                c.IncludeXmlComments(filePath); // Enable swagger comment annotation
-                c.EnableAnnotations(); // Swashbuckle.AspNetCore.Annotations, which enable [SwaggerOperation()] [SwaggerResponse()] and others annotation
+                swagger.IncludeXmlComments(filePath); // Enable swagger comment annotation
+                swagger.EnableAnnotations(); // Swashbuckle.AspNetCore.Annotations, which enable [SwaggerOperation()] [SwaggerResponse()] and others annotation
+                // Add the "Authorize" button in the swagger page
+                swagger.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
+                {
+                    Name = "Authorization",
+                    Type = SecuritySchemeType.ApiKey,
+                    Scheme = "Bearer",
+                    BearerFormat = "JWT",
+                    In = ParameterLocation.Header,
+                    Description = "JWT authorization header using the bearer schema"
+                });
             });
 
             // Add health check service (helpful for kurbenetes)
-            services.AddHealthChecks().AddMongoDb(mongoDbSettings.ConnectionString, name: "mongodb", timeout: TimeSpan.FromSeconds(5), tags: new[] { "dbready" });
+            // services.AddHealthChecks().AddMongoDb(mongoDbSettings.ConnectionString, name: "mongodb", timeout: TimeSpan.FromSeconds(5), tags: new[] { "dbready" });
+            services.AddHealthChecks().AddNpgSql(postgresDbSettings.ConnectionString, timeout: TimeSpan.FromSeconds(5), tags: new[] { "dbready" });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
