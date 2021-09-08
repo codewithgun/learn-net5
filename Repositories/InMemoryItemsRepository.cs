@@ -10,12 +10,7 @@ namespace Catalog.Repositories
     // Therefore, interface used for dependency inversion
     public class InMemoryItemsRepository : IItemsRepository
     {
-        private readonly List<Item> items = new()
-        {
-            new Item { Id = Guid.NewGuid(), Name = "Potion", Price = 9, CreatedDate = DateTimeOffset.UtcNow },
-            new Item { Id = Guid.NewGuid(), Name = "Iron Sword", Price = 25, CreatedDate = DateTimeOffset.UtcNow },
-            new Item { Id = Guid.NewGuid(), Name = "Rounded Shield", Price = 12, CreatedDate = DateTimeOffset.UtcNow }
-        };
+        private readonly List<Item> items = new() { };
 
         public async Task UpdateItemAsync(Item item)
         {

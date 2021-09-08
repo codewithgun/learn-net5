@@ -21,13 +21,15 @@ namespace Catalog.Controllers
     {
         // It can be in-memory repository, mongodb, postgresql
         // Thanks to dependency inversion
-        private readonly IItemsRepository repository;
+        private readonly IItemsRepository itemRepository;
+        private readonly ICategoryRepository categoryRepository;
 
         // constructor
         // Controller is instantiate everytime when there is a request
-        public ItemsController(IItemsRepository repository)
+        public ItemsController(IItemsRepository itemRepository, ICategoryRepository categoryRepository)
         {
-            this.repository = repository;
+            this.itemRepository = itemRepository;
+            this.categoryRepository = categoryRepository;
         }
 
         // GET /items
@@ -44,7 +46,7 @@ namespace Catalog.Controllers
         public async Task<IEnumerable<ItemDto>> GetItemsAsync()
         {
             // Conversion of Item to ItemDto
-            var items = await this.repository.GetItemsAsync();
+            var items = await this.itemRepository.GetItemsAsync();
             return items.Select(item => item.AsDto());
         }
 
@@ -62,7 +64,7 @@ namespace Catalog.Controllers
         [SwaggerResponse(StatusCodes.Status404NotFound, "Item not found", typeof(NotFoundDto))]
         public async Task<IActionResult> GetItemAsync(Guid id)
         {
-            Item item = await this.repository.GetItemAsync(id);
+            Item item = await this.itemRepository.GetItemAsync(id);
             if (item is null)
             {
                 return NotFound();
@@ -77,18 +79,26 @@ namespace Catalog.Controllers
             Description = "Create a new item",
             OperationId = "CreateNewItem"
         )]
+        [SwaggerResponse(StatusCodes.Status400BadRequest, "Validation error")]
+        [SwaggerResponse(StatusCodes.Status404NotFound, "Category not found", typeof(NotFoundDto))]
         [SwaggerResponse(StatusCodes.Status201Created, "Item has been created", typeof(ItemDto))]
         public async Task<ActionResult<ItemDto>> CreateItemAsync(CreateItemDto itemDto)
         {
+            var category = await this.categoryRepository.GetCategoryAsync(itemDto.categoryId);
+            if (category is null)
+            {
+                return NotFound();
+            }
             Item item = new()
             {
                 Id = Guid.NewGuid(),
                 Name = itemDto.Name,
                 Price = itemDto.Price,
-                CreatedDate = DateTimeOffset.UtcNow
+                CreatedDate = DateTimeOffset.UtcNow,
+                CategoryId = category.Id
             };
-            await this.repository.CreateItemAsync(item);
-            return CreatedAtAction(nameof(GetItemAsync), new { id = item.Id }, item); // .Net runtime automatically remove Async suffix, check Startup.cs to stop suffix auto removal
+            await this.itemRepository.CreateItemAsync(item);
+            return CreatedAtAction(nameof(GetItemAsync), new { id = item.Id }, item.AsDto()); // .Net runtime automatically remove Async suffix, check Startup.cs to stop suffix auto removal
         }
 
         // PUT /items
@@ -102,7 +112,7 @@ namespace Catalog.Controllers
         [SwaggerResponse(StatusCodes.Status204NoContent)]
         public async Task<ActionResult> UpdateItemAsync(Guid id, UpdateItemDto itemDto)
         {
-            Item existingItem = await this.repository.GetItemAsync(id);
+            Item existingItem = await this.itemRepository.GetItemAsync(id);
             if (existingItem is null)
             {
                 return NotFound();
@@ -116,7 +126,17 @@ namespace Catalog.Controllers
                 Price = itemDto.Price
             };
 
-            await this.repository.UpdateItemAsync(updatedItem);
+            if (itemDto.categoryId != Guid.Empty)
+            {
+                Category category = await this.categoryRepository.GetCategoryAsync(itemDto.categoryId);
+                if (category is null)
+                {
+                    return NotFound();
+                }
+                updatedItem.CategoryId = category.Id;
+            }
+
+            await this.itemRepository.UpdateItemAsync(updatedItem);
             return NoContent();
         }
 
@@ -131,12 +151,12 @@ namespace Catalog.Controllers
         [SwaggerResponse(StatusCodes.Status204NoContent)]
         public async Task<ActionResult> DeleteItem(Guid id)
         {
-            Item existingItem = await this.repository.GetItemAsync(id);
+            Item existingItem = await this.itemRepository.GetItemAsync(id);
             if (existingItem is null)
             {
                 return NotFound();
             }
-            await this.repository.DeleteItemAsync(existingItem);
+            await this.itemRepository.DeleteItemAsync(existingItem);
             return NoContent();
         }
     }

@@ -23,13 +23,13 @@ namespace Catalog.Repositories
 
         public async Task CreateItemAsync(Item item)
         {
-            this._context.AddAsync(item);
+            this._context.Items.AddAsync(item);
             await this._context.SaveChangesAsync();
         }
 
         public async Task DeleteItemAsync(Item item)
         {
-            this._context.Remove(item);
+            this._context.Items.Remove(item);
             await this._context.SaveChangesAsync();
         }
 
@@ -48,6 +48,10 @@ namespace Catalog.Repositories
             var existingItem = await this._GetItemById(item.Id).SingleOrDefaultAsync();
             existingItem.Name = item.Name;
             existingItem.Price = item.Price;
+            if (item.CategoryId != Guid.Empty)
+            {
+                existingItem.CategoryId = item.CategoryId;
+            }
             this._context.Entry(existingItem).State = EntityState.Modified;
             await this._context.SaveChangesAsync();
         }

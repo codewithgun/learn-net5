@@ -28,14 +28,36 @@ using Npgsql;
 using Catalog.Context;
 using Microsoft.EntityFrameworkCore;
 using Catalog.Entities;
+using System.Threading;
 
 namespace learn_net5_webapi
 {
     public class Startup
     {
+        // When a function return "Task", it represent the task can be async
+        // Unlike javascript, when a function is async, the function will be put to into nextTick queue
+        // Which means, in javascript, the async function execution will be immediately postponed
+        // Output: Start -> End -> Doing some heavy work -> Finish heavy work (change await Task.Delay() to Thread.Sleep())
+
+        // In C#, you to need use await on heavy task to free-up the thread to do other task
+        // public async Task IsItAsync()
+        // {
+        //     Console.WriteLine("Doing some heavy work");
+        //     await Task.Delay(10000);
+        //     Console.WriteLine("Finish heavy work");
+        // }
+
+        // public async void Test()
+        // {
+        //     Console.WriteLine("Start");
+        //     var task = this.IsItAsync();
+        //     Console.WriteLine("End");
+        //     await task;
+        // }
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
+            // this.Test();
         }
 
         public IConfiguration Configuration { get; }
@@ -100,9 +122,17 @@ namespace learn_net5_webapi
                 builder.AllowAnyHeader()
                 .AllowAnyMethod().AllowAnyOrigin();
             }));
-            // services.AddSingleton<IItemsRepository, MongoItemRepository>();
-            services.AddScoped<IItemsRepository, PgItemRepository>();
-            services.AddScoped<ICategoryRepository, PgCategoryRepository>();
+            // Mongodb repository implementation
+            services.AddScoped<IItemsRepository, MongoItemRepository>();
+            services.AddScoped<ICategoryRepository, MongoCategoryRepository>();
+
+            // In-memory repository implementation
+            // services.AddSingleton<IItemsRepository, InMemoryItemsRepository>();
+            // services.AddSingleton<ICategoryRepository, InMemoryCategoryRepository>();
+
+            // Postgresql repository implementation
+            // services.AddScoped<IItemsRepository, PgItemRepository>();
+            // services.AddScoped<ICategoryRepository, PgCategoryRepository>();
             services.AddControllers(options =>
             {
                 options.SuppressAsyncSuffixInActionNames = false; // Disable auto-remove controller method async suffix
@@ -126,8 +156,8 @@ namespace learn_net5_webapi
             });
 
             // Add health check service (helpful for kurbenetes)
-            // services.AddHealthChecks().AddMongoDb(mongoDbSettings.ConnectionString, name: "mongodb", timeout: TimeSpan.FromSeconds(5), tags: new[] { "dbready" });
-            services.AddHealthChecks().AddNpgSql(postgresDbSettings.ConnectionString, timeout: TimeSpan.FromSeconds(5), tags: new[] { "dbready" });
+            services.AddHealthChecks().AddMongoDb(mongoDbSettings.ConnectionString, name: "mongodb", timeout: TimeSpan.FromSeconds(5), tags: new[] { "dbready" });
+            // services.AddHealthChecks().AddNpgSql(postgresDbSettings.ConnectionString, timeout: TimeSpan.FromSeconds(5), tags: new[] { "dbready" });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
