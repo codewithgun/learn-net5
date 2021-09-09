@@ -1,11 +1,11 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Catalog.Dtos;
 using Catalog.Entities;
 using Catalog.Repositories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
@@ -21,6 +21,7 @@ namespace Catalog.Controllers
         {
             this.categoryRepository = categoryRepository;
         }
+
         [HttpGet]
         [SwaggerOperation(
             Summary = "Get categories",
@@ -52,6 +53,7 @@ namespace Catalog.Controllers
             return Ok(category.AsDto());
         }
 
+        [Authorize(Policy = "Admin")]
         [HttpPost]
         [SwaggerOperation(
             Summary = "Create a new category",
@@ -70,6 +72,7 @@ namespace Catalog.Controllers
             return CreatedAtAction(nameof(GetCategoryAsync), new { id = category.Id }, category.AsDto());
         }
 
+        [Authorize(Policy = "Admin")]
         [HttpPut("{id}")]
         [SwaggerOperation(
             Summary = "Update a category",
@@ -93,6 +96,7 @@ namespace Catalog.Controllers
             return NoContent();
         }
 
+        [Authorize(Policy = "Admin")]
         [HttpDelete("{id}")]
         [SwaggerOperation(
             Summary = "Delete a category",

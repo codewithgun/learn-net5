@@ -10,6 +10,7 @@ namespace Catalog.Context
 
         public DbSet<Item> Items { get; set; }
         public DbSet<Category> Categories { get; set; }
+        public DbSet<User> Users { get; set; }
 
         // Sample of manual defining relationship
         // protected override void OnModelCreating(ModelBuilder modelBuilder)

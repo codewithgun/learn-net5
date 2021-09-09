@@ -17,6 +17,17 @@ namespace Catalog
             };
         }
 
+        public static UserDto AsDto(this User user)
+        {
+            return new UserDto
+            {
+                Id = user.Id,
+                Name = user.Name,
+                Email = user.Email,
+                CreatedDate = user.CreatedDate
+            };
+        }
+
         public static CategoryDto AsDto(this Category category)
         {
             return new CategoryDto

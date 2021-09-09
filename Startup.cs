@@ -29,6 +29,8 @@ using Catalog.Context;
 using Microsoft.EntityFrameworkCore;
 using Catalog.Entities;
 using System.Threading;
+using Catalog.Manager;
+using Microsoft.AspNetCore.Authorization;
 
 namespace learn_net5_webapi
 {
@@ -68,6 +70,10 @@ namespace learn_net5_webapi
         {
             //
             var jwtSetting = Configuration.GetSection(nameof(JwtSetting)).Get<JwtSetting>();
+            services.AddSingleton<JsonWebTokenManager>(serviceProvider =>
+            {
+                return new JsonWebTokenManager(jwtSetting);
+            });
 
             BsonSerializer.RegisterSerializer(new GuidSerializer(MongoDB.Bson.BsonType.String));
             BsonSerializer.RegisterSerializer(new DateTimeOffsetSerializer(MongoDB.Bson.BsonType.String));
@@ -95,6 +101,7 @@ namespace learn_net5_webapi
             // DefaultSignInScheme is used by SignInAsync() and also by all of the remote auth schemes like Google/Facebook/OIDC/OAuth, typically this would be set to a cookie.
             // DefaultSignOutScheme is used by SignOutAsync() falls back to DefaultSignInScheme
             // DefaultForbidScheme is used by ForbidAsync(), falls back to DefaultChallengeScheme
+            // Add authentication methods, after that add "Authorize" data annotation to the controller to protect will do
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -102,19 +109,28 @@ namespace learn_net5_webapi
                 options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
             }).AddJwtBearer(jwt =>
             {
-                var secretKey = Encoding.ASCII.GetBytes(jwtSetting.Secret);
-                jwt.SaveToken = true;
+                var secretKey = Encoding.UTF8.GetBytes(jwtSetting.Secret);
+                // jwt.SaveToken = true;
                 jwt.TokenValidationParameters = new TokenValidationParameters
                 {
-                    ValidateIssuerSigningKey = true,
+                    // ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(secretKey),
+                    ValidIssuer = jwtSetting.Issuer,
+                    ValidAudience = jwtSetting.Audience,
+                    // ClockSkew = TimeSpan.Zero
                     ValidateIssuer = false,
                     ValidateAudience = false,
-                    ValidateLifetime = true,
-                    RequireExpirationTime = false,
+                    // ValidateLifetime = true,
+                    // RequireExpirationTime = false,
                 };
             });
 
+            // Role-based / Claim checking
+            services.AddAuthorization(config =>
+            {
+                config.AddPolicy("Admin", policy => policy.RequireClaim("type", "Admin"));
+                config.AddPolicy("User", policy => policy.RequireClaim("type", "User"));
+            });
 
             // Add Cors policies, basically it's rules  
             services.AddCors(sc => sc.AddPolicy("AllowAll", builder =>
@@ -123,23 +139,24 @@ namespace learn_net5_webapi
                 .AllowAnyMethod().AllowAnyOrigin();
             }));
             // Mongodb repository implementation
-            services.AddScoped<IItemsRepository, MongoItemRepository>();
-            services.AddScoped<ICategoryRepository, MongoCategoryRepository>();
+            // services.AddScoped<IItemsRepository, MongoItemRepository>();
+            // services.AddScoped<ICategoryRepository, MongoCategoryRepository>();
 
             // In-memory repository implementation
             // services.AddSingleton<IItemsRepository, InMemoryItemsRepository>();
             // services.AddSingleton<ICategoryRepository, InMemoryCategoryRepository>();
 
             // Postgresql repository implementation
-            // services.AddScoped<IItemsRepository, PgItemRepository>();
-            // services.AddScoped<ICategoryRepository, PgCategoryRepository>();
+            services.AddScoped<IItemsRepository, PgItemRepository>();
+            services.AddScoped<ICategoryRepository, PgCategoryRepository>();
+            services.AddScoped<IUsersRepository, PgUsersRepository>();
             services.AddControllers(options =>
             {
                 options.SuppressAsyncSuffixInActionNames = false; // Disable auto-remove controller method async suffix
             });
             services.AddSwaggerGen(swagger =>
             {
-                swagger.SwaggerDoc("v1", new OpenApiInfo { Title = "learn_net5_webapi", Version = "v1" });
+                swagger.SwaggerDoc("v1", new OpenApiInfo { Title = "learn_net5_webapi", Version = "v1" }); // Generate default swagger UI
                 var filePath = Path.Combine(System.AppContext.BaseDirectory, "learn-net5-webapi.xml"); // Refer to {project_name}.xml in bin
                 swagger.IncludeXmlComments(filePath); // Enable swagger comment annotation
                 swagger.EnableAnnotations(); // Swashbuckle.AspNetCore.Annotations, which enable [SwaggerOperation()] [SwaggerResponse()] and others annotation
@@ -148,16 +165,27 @@ namespace learn_net5_webapi
                 {
                     Name = "Authorization",
                     Type = SecuritySchemeType.ApiKey,
-                    Scheme = "Bearer",
-                    BearerFormat = "JWT",
+                    // Scheme = "Bearer",
+                    // BearerFormat = "JWT",
                     In = ParameterLocation.Header,
-                    Description = "JWT authorization header using the bearer schema"
+                    Description = "JWT authorization header using the bearer schema\r\n\r\n Enter 'Bearer' [space] and then your token in the text input below.\r\n\r\nExample: \"Bearer 12345abcdef\""
+                });
+                swagger.AddSecurityRequirement(new OpenApiSecurityRequirement {
+                { new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer"},
+                            // Scheme = "oauth2",
+                            // Name = "Bearer",
+                            // In = ParameterLocation.Header,
+                        },
+                    new string[] {}
+                }
                 });
             });
 
             // Add health check service (helpful for kurbenetes)
-            services.AddHealthChecks().AddMongoDb(mongoDbSettings.ConnectionString, name: "mongodb", timeout: TimeSpan.FromSeconds(5), tags: new[] { "dbready" });
-            // services.AddHealthChecks().AddNpgSql(postgresDbSettings.ConnectionString, timeout: TimeSpan.FromSeconds(5), tags: new[] { "dbready" });
+            // services.AddHealthChecks().AddMongoDb(mongoDbSettings.ConnectionString, name: "mongodb", timeout: TimeSpan.FromSeconds(5), tags: new[] { "dbready" });
+            services.AddHealthChecks().AddNpgSql(postgresDbSettings.ConnectionString, timeout: TimeSpan.FromSeconds(5), tags: new[] { "dbready" });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -172,6 +200,9 @@ namespace learn_net5_webapi
             app.UseCors("AllowAll"); // AllowAll = Policy added at ConfigureServices
             // app.UseHttpsRedirection(); // Causes issue in docker port mapping
             app.UseRouting();
+            // Enable Jwt token validation middleware
+            app.UseAuthentication();
+            // Enable policy
             app.UseAuthorization();
             app.UseEndpoints(endpoints =>
             {
