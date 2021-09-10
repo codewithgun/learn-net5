@@ -11,6 +11,7 @@ using Catalog.Dtos;
 using System.Threading.Tasks;
 using Swashbuckle.AspNetCore.Annotations;
 using System.Collections;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Catalog.Controllers
 {
@@ -73,6 +74,7 @@ namespace Catalog.Controllers
         }
 
         // POST /items
+        [Authorize(Policy = "Admin")]
         [HttpPost]
         [SwaggerOperation(
             Summary = "Create a new item",
@@ -102,6 +104,7 @@ namespace Catalog.Controllers
         }
 
         // PUT /items
+        [Authorize(Policy = "Admin")]
         [HttpPut("{id}")]
         [SwaggerOperation(
             Summary = "Update item",
@@ -141,6 +144,7 @@ namespace Catalog.Controllers
         }
 
         // DELETE /items
+        [Authorize(Policy = "Admin")]
         [HttpDelete("{id}")]
         [SwaggerOperation(
             Summary = "Delete an item",

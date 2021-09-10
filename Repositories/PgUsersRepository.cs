@@ -29,6 +29,12 @@ namespace Catalog.Repositories
             await this.context.SaveChangesAsync();
         }
 
+        public async Task<User> GetUserByEmail(string email)
+        {
+            var user = await this.context.Users.Where(u => u.Email == email).FirstOrDefaultAsync();
+            return user;
+        }
+
         public async Task<User> GetAuthUserAsync(AuthDto authDto)
         {
             var user = await this.context.Users.Where(u => u.Email == authDto.Username && u.Password == authDto.Password).FirstOrDefaultAsync();

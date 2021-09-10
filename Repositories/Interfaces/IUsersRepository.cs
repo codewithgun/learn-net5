@@ -16,6 +16,7 @@ namespace Catalog.Repositories
 
         Task DeleteUserAsync(User user);
 
+        Task<User> GetUserByEmail(string email);
         Task<User> GetAuthUserAsync(AuthDto autoDto);
     }
 }
